@@ -19,6 +19,8 @@ const (
 
 const (
 	ASSETS    = "/assets"
+	CSS_DIR   = "/css/"
+	JS_DIR    = "/js/"
 	FAVICON   = "favicon.ico"
 	INDEX			= "index"
 )
@@ -58,12 +60,13 @@ func init() {
 func initRouter() *mux.Router {
 
 	router := mux.NewRouter()
-
-	router.PathPrefix(ASSETS).Handler(http.StripPrefix(ASSETS,
-		http.FileServer(http.Dir(PWD))))
 	
 	router.HandleFunc("/", genericHandler)
-	//router.HandleFunc("/{resource}", genericHandler)
+
+	router.PathPrefix(CSS_DIR).Handler(http.FileServer(
+		http.Dir(PWD)))
+	router.PathPrefix(JS_DIR).Handler(http.FileServer(
+		http.Dir(PWD)))
 
 	return router
 
