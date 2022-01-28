@@ -38,6 +38,7 @@ const (
 	AMBER_EXT   		= "amber"
 	HEAD1           = "h1"
 	INDEX_TEMPLATE  = "index.amber"
+	INDEX_HTML      = "index.html"
 	MARKDOWN				= "markdown"
 	MD_EXT      		= "md"
 	PWD							= "."
@@ -181,7 +182,7 @@ func writeHtml(filename string, t *template.Template) {
 		color.Red("[Error] writeHtml(): %s", err)
 	} else {
 
-		color.Green("%s created...", filename)
+		color.Green(filename)
 
 		s := struct{
 			Master map[string] Article
@@ -238,7 +239,13 @@ func getCreationDate(f string) string {
 			color.Red("getCreationDate(): %s", err)
 			return fmt.Sprintf("%d", time.Now().Unix())
 		} else {
-			return fmt.Sprintf("%d", fh.BirthTime().Unix())
+
+			if fh.HasBirthTime() {
+				return fmt.Sprintf("%d", fh.BirthTime().Unix())
+			} else {
+				return fmt.Sprintf("%d", fh.ModTime().Unix())
+			}
+			
 		}
 
 	} else {
@@ -311,7 +318,7 @@ func buildPage() {
 			if err != nil {
 				color.Red("buildPage(): %s", err)
 			} else {
-				writeHtml(fmt.Sprintf("%s/%s", PWD, "./index.html"), buf)
+				writeHtml(fmt.Sprintf("%s/%s", PWD, INDEX_HTML), buf)
 			}	
 
 		}
@@ -332,15 +339,12 @@ func extractArticles() {
 		return
 	}
 
-	log.Println(files)
-
   for _, f := range files {
 
 		if shouldExclude(f) {
 			continue
 		}
 
-		log.Println(f)
 		file, err := os.Open(f)
 
 		if err != nil {
@@ -385,7 +389,6 @@ func compile() {
 	initMaster()
 	extractArticles()
 
-	log.Println(len(master))
 	buildPage()
 
 } // compile

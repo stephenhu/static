@@ -12,4 +12,4 @@ FROM ubuntu
 WORKDIR /usr/local/static
 COPY --from=builder /sources/static .
 RUN apt-get -y update && apt-get install -y
-CMD ["/usr/local/static/static"]
+CMD ["/usr/local/static/static", "build"]
