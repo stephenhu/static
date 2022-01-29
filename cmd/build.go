@@ -25,13 +25,11 @@ import (
 type Article struct {
 	ID            string            `json:"id"`
 	Title					string						`json:"title"`
+	Summary       string            `json:"summary"`
 	Creation      string        		`json:"creation"`
 	Contents      string        		`json:"contents"`
 	Tags          map[string]int    `json:"tags"`
 }
-
-
-var master map[string] Article
 
 
 const (
@@ -41,10 +39,19 @@ const (
 	INDEX_HTML      = "index.html"
 	MARKDOWN				= "markdown"
 	MD_EXT      		= "md"
+	P               = "p"
 	PWD							= "."
 	README        	= "README.md"
 	STATIC_IGNORE   = ".staticignore"
 )
+
+
+const (
+	ERR_NO_TAG		  = "Error: title missing please add an h1 element."
+)
+
+
+var master map[string] Article
 
 
 var (
@@ -186,10 +193,10 @@ func writeHtml(filename string, t *template.Template) {
 
 		s := struct{
 			Master map[string] Article
-			Hello string
+			Version string
 		}{
 			Master: master,
-			Hello: "testing hello world",
+			Version: APP_VERSION,
 		}
 
 		err := t.Execute(fh, s)
@@ -258,6 +265,39 @@ func getCreationDate(f string) string {
 func initMaster() {
 	master = make(map[string] Article)
 } // initMaster
+
+
+// expects to find all the h1 headers and take the first one
+func parseTagContents(tag string, buf []byte) string {
+
+	if len(buf) == 0 {
+		color.Red("parseTitle(): content is empty and cannot be parsed")
+		return ""
+	} else {
+
+		reader := bytes.NewReader(buf)
+
+		doc, err := goquery.NewDocumentFromReader(reader)
+
+		if err != nil {
+			log.Println("parseTagContents: ", err)
+		}
+
+		sel := doc.Find(tag)
+
+		first := sel.First()
+
+		out := first.Text()
+
+		if len(out) == 0 {
+			return ERR_NO_TAG
+		} else {
+			return out
+		}
+
+	}
+
+} // parseTagContents
 
 
 // expects to find all the h1 headers and take the first one
@@ -368,7 +408,8 @@ func extractArticles() {
 
 				a := Article {
 					Contents: string(content),
-					Title: parseTitle(content),
+					Title: parseTagContents(HEAD1, content),
+					Summary: parseTagContents(P, content),
 					Creation: d,
 					ID: h, 
 				}
@@ -381,12 +422,15 @@ func extractArticles() {
 
 	}
 
+	log.Println(master)
+
 } // extractArticles
 
 
 func compile() {
 
 	initMaster()
+
 	extractArticles()
 
 	buildPage()

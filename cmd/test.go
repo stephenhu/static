@@ -106,10 +106,10 @@ func genericHandler(w http.ResponseWriter, r *http.Request) {
 
 			s := struct{
 				Master map[string] Article
-				Hello string
+				Version string
 			}{
 				Master: master,
-				Hello: "test server",
+				Version: APP_VERSION,
 			}
 
 			template.Execute(w, s)
