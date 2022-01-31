@@ -97,7 +97,7 @@ func ignoreFiles() []string {
   _, err := os.Stat(STATIC_IGNORE)
 
   if os.IsNotExist(err) {
-	return nil
+		return nil
   } else {
 	
 	/*
@@ -111,7 +111,7 @@ func ignoreFiles() []string {
 	}
 	*/
 
-	return nil
+		return nil
 
   }
 
@@ -298,35 +298,6 @@ func parseTagContents(tag string, buf []byte) string {
 	}
 
 } // parseTagContents
-
-
-// expects to find all the h1 headers and take the first one
-func parseTitle(buf []byte) string {
-
-	if len(buf) == 0 {
-		color.Red("parseTitle(): content is empty and cannot be parsed")
-		return ""
-	} else {
-
-		reader := bytes.NewReader(buf)
-
-		doc, err := goquery.NewDocumentFromReader(reader)
-
-		if err != nil {
-			log.Println("parseTitle: ", err)
-		}
-
-		var out string
-
-		doc.Find(HEAD1).Each(func(index int, item *goquery.Selection) {
-			out = item.Text()
-			log.Println(out)
-		})
-
-		return out
-	}
-
-} // parseTitle
 
 
 func checkTemplates() bool {
