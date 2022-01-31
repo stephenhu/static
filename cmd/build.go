@@ -28,26 +28,37 @@ type Article struct {
 	Summary       string            `json:"summary"`
 	Creation      string        		`json:"creation"`
 	Contents      string        		`json:"contents"`
+	Image         string            `json:"image"`
 	Tags          map[string]int    `json:"tags"`
 }
 
 
 const (
 	AMBER_EXT   		= "amber"
+	ELLIPSES        = "..."
+	EMPTY           = ""
 	HEAD1           = "h1"
+	IMG             = "img"
 	INDEX_TEMPLATE  = "index.amber"
 	INDEX_HTML      = "index.html"
 	MARKDOWN				= "markdown"
+	META_SRC        = "src"
 	MD_EXT      		= "md"
 	P               = "p"
 	PWD							= "."
 	README        	= "README.md"
+	SPACE           = " "
 	STATIC_IGNORE   = ".staticignore"
 )
 
 
 const (
-	ERR_NO_TAG		  = "Error: title missing please add an h1 element."
+	SUMMARY_MAX_CHAR    = 200
+)
+
+
+const (
+	ERR_NO_TAG		  = "Error: tag does not exist"
 )
 
 
@@ -55,8 +66,8 @@ var master map[string] Article
 
 
 var (
-	srcDir				string
-	outDir				string
+	srcDir					string
+	outDir					string
 	overwrite 			bool
 )
 
@@ -250,7 +261,7 @@ func getCreationDate(f string) string {
 			if fh.HasBirthTime() {
 				return fmt.Sprintf("%d", fh.BirthTime().Unix())
 			} else {
-				return fmt.Sprintf("%d", fh.ModTime().Unix())
+				return fmt.Sprintf("%d", time.Now().Unix())
 			}
 			
 		}
@@ -268,7 +279,7 @@ func initMaster() {
 
 
 // expects to find all the h1 headers and take the first one
-func parseTagContents(tag string, buf []byte) string {
+func parseTagContents(tag string, buf []byte, attr string) string {
 
 	if len(buf) == 0 {
 		color.Red("parseTitle(): content is empty and cannot be parsed")
@@ -287,10 +298,24 @@ func parseTagContents(tag string, buf []byte) string {
 
 		first := sel.First()
 
-		out := first.Text()
+		var out string
+
+		if len(attr) > 0 {
+
+			exists := false
+			
+			out, exists = first.Attr(attr)
+			
+			if !exists {
+				out = ERR_NO_TAG
+			}
+
+		} else {
+			out = first.Text()
+		}
 
 		if len(out) == 0 {
-			return ERR_NO_TAG
+			return fmt.Sprintf("%s %s", ERR_NO_TAG, tag)
 		} else {
 			return out
 		}
@@ -341,9 +366,41 @@ func buildPage() {
 } // buildPage
 
 
+func generateSummary(t string, c []byte) string {
+
+	tmp := parseTagContents(t, c, EMPTY)
+
+	tmp = strings.TrimSpace(tmp)
+
+	if len(tmp) >= SUMMARY_MAX_CHAR {
+
+		tmp = strings.TrimRight(tmp[0:SUMMARY_MAX_CHAR-1], SPACE)
+
+		tmp = fmt.Sprintf("%s%s", tmp, ELLIPSES)
+
+	}
+
+	return tmp
+
+} // generateSummary
+
+
+func extractImage(c []byte) string {
+
+	href := parseTagContents(IMG, c, META_SRC)
+
+	if href == ERR_NO_TAG {
+		return EMPTY
+	} else {
+		return href
+	}
+
+} // extractImage
+
+
 func extractArticles() {
 
-	files, err := filepath.Glob(fmt.Sprintf("%s/*.%s", ".", MD_EXT))
+	files, err := filepath.Glob(fmt.Sprintf("%s/*.%s", PWD, MD_EXT))
 
 	if err != nil {
 		log.Println(err)
@@ -379,8 +436,9 @@ func extractArticles() {
 
 				a := Article {
 					Contents: string(content),
-					Title: parseTagContents(HEAD1, content),
-					Summary: parseTagContents(P, content),
+					Title: parseTagContents(HEAD1, content, EMPTY),
+					Summary: generateSummary(P, content),
+					Image: extractImage(content),
 					Creation: d,
 					ID: h, 
 				}
@@ -392,8 +450,6 @@ func extractArticles() {
 		}
 
 	}
-
-	log.Println(master)
 
 } // extractArticles
 
