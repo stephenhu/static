@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	//"strings"
 
 	"github.com/eknkc/amber"
 	"github.com/gorilla/mux"
