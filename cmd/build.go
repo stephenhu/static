@@ -153,7 +153,6 @@ func fileExists(filename string) bool {
 } // fileExists
 
 
-
 func writeHtml(filename string, t *template.Template) {
 
 	if len(outDir) > 0 {
@@ -268,8 +267,6 @@ func parseTagContents(tag string, buf []byte, attr string) string {
 			return ERR_NO_TAG
 		}
 
-		//sel := doc.Find(tag)
-
     var out string
 
     doc.Find(tag).Each(func(i int, s *goquery.Selection) {
@@ -299,26 +296,6 @@ func parseTagContents(tag string, buf []byte, attr string) string {
 			}
 
     })
-
-/*
-		first := sel.First()
-
-		var out string
-
-		if len(attr) > 0 {
-
-			exists := false
-			
-			out, exists = first.Attr(attr)
-			
-			if !exists {
-				out = ERR_NO_TAG
-			}
-
-		} else {
-			out = first.Text()
-		}
-*/
 
 		if len(out) == 0 {
 			return ERR_NO_TAG
@@ -435,7 +412,6 @@ func extractArticles() {
 			} else {
 
 				content := blackfriday.Run(buf)
-
 
 				h := hash(buf)
 
