@@ -153,33 +153,6 @@ func fileExists(filename string) bool {
 } // fileExists
 
 
-func toHtml(filename string) string {
-
-	var str string
-
-	ext 	:= filepath.Ext(filename)
-	base	:= filepath.Base(filename)
-
-	switch ext {
-	case AMBER_EXT:
-		str = strings.TrimSuffix(base, AMBER_EXT)
-
-	case MARKDOWN:		
-		str = strings.TrimSuffix(base, MARKDOWN)
-
-	case MD_EXT:
-		str = strings.TrimSuffix(base, MD_EXT)
-		
-	}
-
-	if len(outDir) == 0 {
-		return fmt.Sprintf("%s.html", str)	
-	} else {
-		return fmt.Sprintf("%s/%s.html", outDir, str)
-	}
-
-} // toHtml
-
 
 func writeHtml(filename string, t *template.Template) {
 
@@ -292,10 +265,42 @@ func parseTagContents(tag string, buf []byte, attr string) string {
 
 		if err != nil {
 			log.Println("parseTagContents: ", err)
+			return ERR_NO_TAG
 		}
 
-		sel := doc.Find(tag)
+		//sel := doc.Find(tag)
 
+    var out string
+
+    doc.Find(tag).Each(func(i int, s *goquery.Selection) {
+
+			// img's are embedded in p, so the text of a p is empty
+
+			if len(attr) > 0 {
+
+				val, exists := s.Attr(attr)
+
+				if !exists {
+					out = ERR_NO_TAG
+				} else {
+					out = val
+				}
+        
+      } else {
+
+				if len(s.Text()) > 0 {
+
+					if len(out) == 0 {
+						out = s.Text()
+					}
+					
+				}
+
+			}
+
+    })
+
+/*
 		first := sel.First()
 
 		var out string
@@ -313,9 +318,10 @@ func parseTagContents(tag string, buf []byte, attr string) string {
 		} else {
 			out = first.Text()
 		}
+*/
 
 		if len(out) == 0 {
-			return fmt.Sprintf("%s %s", ERR_NO_TAG, tag)
+			return ERR_NO_TAG
 		} else {
 			return out
 		}
@@ -430,8 +436,7 @@ func extractArticles() {
 
 				content := blackfriday.Run(buf)
 
-				d := getCreationDate(f)
-				
+
 				h := hash(buf)
 
 				a := Article {
@@ -439,7 +444,7 @@ func extractArticles() {
 					Title: parseTagContents(HEAD1, content, EMPTY),
 					Summary: generateSummary(P, content),
 					Image: extractImage(content),
-					Creation: d,
+					Creation: getCreationDate(f),
 					ID: h, 
 				}
 
