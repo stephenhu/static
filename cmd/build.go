@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 	
@@ -31,6 +32,9 @@ type Article struct {
 	Image         string            `json:"image"`
 	Tags          map[string]int    `json:"tags"`
 }
+
+
+type Articles []Article
 
 
 const (
@@ -62,7 +66,7 @@ const (
 )
 
 
-var master map[string] Article
+var master Articles
 
 
 var (
@@ -92,6 +96,11 @@ func init() {
 		false, "overwrite existing files")
 
 } // init
+
+
+func (a Articles) Len() int { return len(a) }
+func (a Articles) Less(i, j int) bool { return a[i].Creation < a[j].Creation }
+func (a Articles) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 
 func hash(buf []byte) string {
@@ -174,8 +183,10 @@ func writeHtml(filename string, t *template.Template) {
 
 		color.Green(filename)
 
+		sort.Sort(master)
+
 		s := struct{
-			Master map[string] Article
+			Master [] Article
 			Version string
 		}{
 			Master: master,
@@ -246,7 +257,8 @@ func getCreationDate(f string) string {
 
 
 func initMaster() {
-	master = make(map[string] Article)
+	//master = make(map[string] Article)
+	master = []Article{}
 } // initMaster
 
 
@@ -413,7 +425,7 @@ func extractArticles() {
 
 				content := blackfriday.Run(buf)
 
-				h := hash(buf)
+				//h := hash(buf)
 
 				a := Article {
 					Contents: string(content),
@@ -421,10 +433,11 @@ func extractArticles() {
 					Summary: generateSummary(P, content),
 					Image: extractImage(content),
 					Creation: getCreationDate(f),
-					ID: h, 
+					ID: hash(buf), 
 				}
 
-				master[h] = a
+				//master[h] = a
+				master = append(master, a)
 
 			}
 	

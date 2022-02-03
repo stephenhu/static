@@ -104,7 +104,7 @@ func genericHandler(w http.ResponseWriter, r *http.Request) {
 			extractArticles()
 
 			s := struct{
-				Master map[string] Article
+				Master [] Article
 				Version string
 			}{
 				Master: master,
