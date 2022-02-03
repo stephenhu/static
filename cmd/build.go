@@ -257,7 +257,6 @@ func getCreationDate(f string) string {
 
 
 func initMaster() {
-	//master = make(map[string] Article)
 	master = []Article{}
 } // initMaster
 
