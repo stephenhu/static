@@ -13,14 +13,22 @@ import (
 	"strings"
 	"time"
 	
-	
 	"github.com/djherbis/times"
 	"github.com/eknkc/amber"
 	"github.com/fatih/color"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/russross/blackfriday/v2"
 	"github.com/spf13/cobra"
 )
+
+
+type GitObject struct {
+  Name 					string						`json:"name"`
+	Creation		  string						`json:"creation"`
+	Timestamp			int64						  `json:"timestamp"`
+}
 
 
 type Article struct {
@@ -28,6 +36,7 @@ type Article struct {
 	Title					string						`json:"title"`
 	Summary       string            `json:"summary"`
 	Creation      string        		`json:"creation"`
+	Timestamp     int64            	`json:"timestamp"`
 	Contents      string        		`json:"contents"`
 	Image         string            `json:"image"`
 	Tags          map[string]int    `json:"tags"`
@@ -39,8 +48,10 @@ type Articles []Article
 
 const (
 	AMBER_EXT   		= "amber"
+	DATE_PREFIX     = "Date:"
 	ELLIPSES        = "..."
 	EMPTY           = ""
+	GIT_DATE_FMT    = "Mon Jan 02 15:04:05 2006 -0700"
 	HEAD1           = "h1"
 	IMG             = "img"
 	INDEX_TEMPLATE  = "index.amber"
@@ -58,11 +69,13 @@ const (
 
 const (
 	SUMMARY_MAX_CHAR    = 200
+	DATE_INDEX          = 2
 )
 
 
 const (
-	ERR_NO_TAG		  = "Error: tag does not exist"
+	ERR_NO_TAG		  					= "Error: tag does not exist"
+	ERR_NO_MARKDOWN_FILES			= "Error: no markdown files found"
 )
 
 
@@ -99,7 +112,7 @@ func init() {
 
 
 func (a Articles) Len() int { return len(a) }
-func (a Articles) Less(i, j int) bool { return a[i].Creation < a[j].Creation }
+func (a Articles) Less(i, j int) bool { return a[i].Timestamp > a[j].Timestamp }
 func (a Articles) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 
@@ -183,7 +196,11 @@ func writeHtml(filename string, t *template.Template) {
 
 		color.Green(filename)
 
+		log.Println(master)
 		sort.Sort(master)
+		log.Println("sorted")
+		log.Println(master)
+
 
 		s := struct{
 			Master [] Article
@@ -228,6 +245,88 @@ func getFiles() []string {
 	return files
 
 } // getFiles
+
+
+func getMarkdownFiles() []string {
+
+	files, err := filepath.Glob(fmt.Sprintf("%s/*.%s", PWD, MD_EXT))
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	} else {
+		return files
+	}
+
+} // getMarkdownFiles
+
+
+func parseDateFromCommit(c *object.Commit) GitObject {
+
+	lines := strings.Split(c.String(), "\n")
+
+	s := strings.Trim(lines[DATE_INDEX], DATE_PREFIX)
+
+	s = strings.TrimSpace(s)
+
+	var t int64
+
+	tmp, err := time.Parse(GIT_DATE_FMT, s)
+
+	if err != nil {
+		log.Println(err)
+		t = 0
+	} else {
+		t = tmp.Unix()
+	}
+
+	return GitObject{
+		Creation: s,
+		Timestamp: t,
+	}
+
+} // parseDateFromCommit
+
+
+func getGitDates(f string) (string, int64) {
+
+	var g GitObject
+
+	r, err := git.PlainOpen(PWD)
+
+	if err != nil {
+		
+		log.Println(err)
+		return EMPTY, 0
+
+	} else {
+
+		logs, err := r.Log(&git.LogOptions{
+			FileName: &f,
+		})
+
+		if err != nil {
+			
+			log.Println(err)
+			return EMPTY, 0
+
+		} else {
+
+			err = logs.ForEach(func(c *object.Commit) error {
+
+				g = parseDateFromCommit(c)
+					
+				return nil
+
+			})
+
+		}
+
+		return g.Creation, g.Timestamp
+
+	}
+
+} // getGitDates
 
 
 func getCreationDate(f string) string {
@@ -424,18 +523,18 @@ func extractArticles() {
 
 				content := blackfriday.Run(buf)
 
-				//h := hash(buf)
+				creation, timestamp := getGitDates(f)
 
 				a := Article {
 					Contents: string(content),
 					Title: parseTagContents(HEAD1, content, EMPTY),
 					Summary: generateSummary(P, content),
 					Image: extractImage(content),
-					Creation: getCreationDate(f),
+					Creation: creation,
+					Timestamp: timestamp,
 					ID: hash(buf), 
 				}
 
-				//master[h] = a
 				master = append(master, a)
 
 			}

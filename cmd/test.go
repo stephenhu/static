@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/eknkc/amber"
 	"github.com/gorilla/mux"
@@ -38,6 +39,7 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		router := initRouter()
+		
 		fmt.Printf("Starting local webserver on %s:%s...", addr, port)
 
 		fmt.Println(http.ListenAndServe(fmt.Sprintf("%s:%s", addr, port), router))
@@ -102,6 +104,8 @@ func genericHandler(w http.ResponseWriter, r *http.Request) {
 			initMaster()
 
 			extractArticles()
+
+			sort.Sort(master)
 
 			s := struct{
 				Master [] Article
