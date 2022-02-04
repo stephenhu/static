@@ -57,6 +57,7 @@ const (
 	INDEX_TEMPLATE  = "index.amber"
 	INDEX_HTML      = "index.html"
 	MARKDOWN				= "markdown"
+	NEWLINE         = "\n"
 	META_SRC        = "src"
 	MD_EXT      		= "md"
 	P               = "p"
@@ -259,12 +260,14 @@ func getMarkdownFiles() []string {
 
 func parseDateFromCommit(c *object.Commit) GitObject {
 
-	lines := strings.Split(c.String(), "\n")
+	lines := strings.Split(c.String(), NEWLINE)
 
 	s := strings.Trim(lines[DATE_INDEX], DATE_PREFIX)
 
 	s = strings.TrimSpace(s)
 
+	log.Println(s)
+	
 	var t int64
 
 	tmp, err := time.Parse(GIT_DATE_FMT, s)
@@ -287,6 +290,8 @@ func parseDateFromCommit(c *object.Commit) GitObject {
 func getGitDates(f string) (string, int64) {
 
 	var g GitObject
+
+	log.Println(f)
 
 	r, err := git.PlainOpen(PWD)
 
