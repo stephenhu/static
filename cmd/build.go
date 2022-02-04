@@ -196,11 +196,7 @@ func writeHtml(filename string, t *template.Template) {
 
 		color.Green(filename)
 
-		log.Println(master)
 		sort.Sort(master)
-		log.Println("sorted")
-		log.Println(master)
-
 
 		s := struct{
 			Master [] Article
@@ -524,6 +520,9 @@ func extractArticles() {
 				content := blackfriday.Run(buf)
 
 				creation, timestamp := getGitDates(f)
+
+				log.Println(creation)
+				log.Println(timestamp)
 
 				a := Article {
 					Contents: string(content),
